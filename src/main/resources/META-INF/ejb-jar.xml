@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ejb-jar xmlns = "http://java.sun.com/xml/ns/javaee"
+         version = "3.1"
+         xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation = "http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/ejb-jar_3_1.xsd">
+    <description>MTS Core EJBs</description>
+    <display-name>mts</display-name>
+    <enterprise-beans>
+        <session>
+            <ejb-name>CorePlugin</ejb-name>
+            <env-entry>
+                <env-entry-name>BUILD_ENVIRONMENT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>DEV</env-entry-value>
+            </env-entry>
+            <!-- session related settings -->
+            <env-entry>
+                <env-entry-name>SESSION_TIMEOUT</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>28800</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>MAX_FAILED_LOGIN_ATTEMPTS</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>10</env-entry-value>
+            </env-entry>
+
+            <!-- smtp server settings -->
+            <env-entry>
+                <env-entry-name>SMTP_HOST</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>localhost</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>SMTP_PORT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>25</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>TEST_EMAIL_TO_ADDRESS</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>mts-test-address@hln.com</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>DEFAULT_FROM_ADDRESS</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>mts@hln.com</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>SYSADMIN_TO_ADDRESS</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>sysadmin-hln@hln.com</env-entry-value>
+            </env-entry>
+
+            <!-- file manager settings -->
+            <env-entry>
+                <env-entry-name>FILE_DAY_OF_WEEK_INTERVAL</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>2</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>FILE_EXPIRATION_DAYS</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>3</env-entry-value>
+            </env-entry>
+
+            <!-- cache manager settings -->
+            <env-entry>
+                <env-entry-name>EHCACHE_MAX_TIMEOUT</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>1000</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>EHCACHE_SIZE_OF_DEPTH_LIMIT</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>4000</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>EHCACHE_COPY_STRATEGY_CLASS</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>net.sf.ehcache.store.compound.ImmutableValueElementCopyStrategy</env-entry-value>
+            </env-entry>
+            
+            <!-- jasper server config -->
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_SSL</env-entry-name>
+                <env-entry-type>java.lang.Boolean</env-entry-type>
+                <env-entry-value>false</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_HOST</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>localhost</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_PORT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>8080</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_USERNAME</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>jasperadmin</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_PASSWORD</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>jasperadmin</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_ROOT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>/jasperserver</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>JASPER_SERVER_DATE_FORMAT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>MM/dd/yyyy</env-entry-value>
+            </env-entry>   
+                     
+            <env-entry>
+                <env-entry-name>LOG_EXCEPTIONS</env-entry-name>
+                <env-entry-type>java.lang.Boolean</env-entry-type>
+                <env-entry-value>false</env-entry-value>
+            </env-entry>   
+            
+            <env-entry>
+                <env-entry-name>APP_LOG_HOUR_INTERVAL</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>*</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>APP_LOG_MINUTE_INTERVAL</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>*/1</env-entry-value>
+            </env-entry>
+            <env-entry> 
+                <env-entry-name>APP_LOG_SECOND_INTERVAL</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>0</env-entry-value>
+            </env-entry>
+            
+            <!-- db resources -->
+            <env-entry>
+                <env-entry-name>DB_RESOURCES</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>MTS|jdbc/mts,MTSINT|jdbc/mtsint</env-entry-value>
+            </env-entry>
+
+            <!-- app server -->
+            <env-entry>
+                <env-entry-name>ORG.CDSFRAMEWORK.APP_SERVER</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>GLASSFISH</env-entry-value>
+            </env-entry>
+
+        </session>
+    </enterprise-beans>
+    <interceptors>
+        <interceptor>
+            <interceptor-class>org.cdsframework.util.interceptor.LoggingInterceptor</interceptor-class>
+        </interceptor>
+    </interceptors>
+    <assembly-descriptor>
+        <interceptor-binding>
+            <ejb-name>**uyut**</ejb-name>
+            <interceptor-class>org.cdsframework.util.interceptor.LoggingInterceptor</interceptor-class>
+        </interceptor-binding>
+        <interceptor-binding>
+            <ejb-name>**ghj**</ejb-name>
+            <interceptor-class>org.cdsframework.util.interceptor.LoggingInterceptor</interceptor-class>
+        </interceptor-binding>
+    </assembly-descriptor>
+</ejb-jar>

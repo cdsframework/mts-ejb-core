@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+    <appender name="ConsoleAppender" class="org.apache.log4j.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d [%t] %-5p %c{1} - %m%n"/>
+        </layout>
+    </appender>
+    <appender name="MainFileAppender" class="org.apache.log4j.DailyRollingFileAppender">
+        <param name="File" value="${com.sun.aas.instanceRoot}/logs/mts.log"/>
+        <param name="Append" value="true"/>
+        <param name="DatePattern" value="'.'yyyy-MM-dd"/>
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d [%t] %-5p %c %x - %m%n"/>
+        </layout>
+    </appender>
+
+    <logger name="mci.mcicore.CoreServiceConnection">
+        <level value="info"/>
+    </logger>
+    <logger name="org.apache.axis2.deployment.DeploymentEngine">
+        <level value="warn"/>
+    </logger>
+    <logger name="org.cdsframework.callback.DMLOperation">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.StageFacilityContactDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="net.sf.ehcache.pool.sizeof">
+        <level value="info"/>
+    </logger>
+    <logger name="net.sf.ehcache.code">
+        <level value="info"/>
+    </logger>
+    <logger name="net.sf.ehcache.distribution">
+        <level value="info"/>
+    </logger>
+    <logger name="net.sf.ehcache.config">
+        <level value="info"/>
+    </logger>
+    <logger name="net.sf.ehcache">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.StageFacilityProviderDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.StageFacilityDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.StageFacilityBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.base.BaseDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.ProviderDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.ProviderBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.SecuritySchemeDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.SecurityPermissionDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.base.BaseBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.TcUserBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.rules.TcUserRules">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.SecuritySchemeBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.SecurityPermissionBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.rowmapper.SecuritySchemeMapper">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.rowmapper.SecurityPermissionMapper">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.template.utils.DataSourceUtils">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.SecurityMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.ReferenceMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.PropertyMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.Hl7AccountBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.mgr.Hl7MGR">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.Hl7VxuMessageLogBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.Hl7MessageLogDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.Hl7MessageLogBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.ImmunizationDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.AddressBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.OtherPatientKeysBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.LegalContactPersonBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.AddressDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.ImmunizationComponentDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.PatientBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.PatientDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.ImmunizationBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.ImmunizationComponentBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.rowmapper.Hl7VxuMessageLogMapper">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.interceptor.LoggingInterceptor">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.mgr.MciMGR">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.CorbaMciConnection">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.EjbMciMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.CorbaMciMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.mgr.PatientMGR">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.mgr.FacilityMGR">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.FacilityBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.FacilityContactBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.FacilityDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.lookup.VaccineLkDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.lookup.VaccineGroupLkDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.FacilityContactDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.rowmapper.ImmunizationMapper">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.mgr.Hl7AccountMGR">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.base.BaseMGR">
+        <level value="info"/>
+    </logger>
+    <logger name="gov.nyc.health.mci.util.ProfileUtils">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.mgr.PatientEncounterMGR">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.encounter.PatientEncounterBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.encounter.EncounterReviewBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.encounter.EncounterVaccGrpRequestBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.encounter.EncounterQuestionBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.encounter.ClinicQueueDetailBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.encounter.ClinicHeaderDetailBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.encounter.PatientEncounterDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.encounter.EncounterQuestionDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.encounter.EncounterReviewDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.encounter.EncounterVaccGrpRequestDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.encounter.ClinicQueueDetailDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.dao.encounter.ClinicHeaderDetailDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.CacheMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.SessionBO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.local.IdentityMGRLocal">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.util.interceptor.MciInterceptor">
+        <level value="info"/>
+    </logger>
+    <logger name="ice.test.importers.Xlsx">
+        <level value="info"/>
+    </logger>
+
+    <logger name="org.cdsframework.ejb.dao.ice.IceTestSuiteDAO">
+        <level value="info"/>
+    </logger>
+    <logger name="org.cdsframework.ejb.bo.ice.IceTestSuiteBO">
+        <level value="info"/>
+    </logger>
+    <root>
+        <priority value ="info" />
+        <appender-ref ref="ConsoleAppender"/>
+        <appender-ref ref="MainFileAppender"/>
+    </root>
+</log4j:configuration>

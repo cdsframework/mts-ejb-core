@@ -26,9 +26,6 @@
  */
 package org.cdsframework.ejb.timer;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;

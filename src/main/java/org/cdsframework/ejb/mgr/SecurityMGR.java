@@ -52,8 +52,6 @@ import org.cdsframework.ejb.local.SecurityMGRInternal;
 import org.cdsframework.ejb.local.UserSecurityMGRLocal;
 import org.cdsframework.enumeration.LogLevel;
 import org.cdsframework.enumeration.PermissionType;
-import org.cdsframework.exceptions.ConstraintViolationException;
-import org.cdsframework.exceptions.ValidationException;
 import org.cdsframework.security.UserSecuritySchemePermissionMap;
 
 /**

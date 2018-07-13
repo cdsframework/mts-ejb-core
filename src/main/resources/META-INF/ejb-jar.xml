@@ -139,7 +139,14 @@
                 <env-entry-type>java.lang.String</env-entry-type>
                 <env-entry-value>0</env-entry-value>
             </env-entry>
-            
+
+            <!-- notification manager -->
+            <env-entry>
+                <env-entry-name>NOTIFICATIONS_ENABLED</env-entry-name>
+                <env-entry-type>java.lang.Boolean</env-entry-type>
+                <env-entry-value>false</env-entry-value>
+            </env-entry>
+
             <!-- db resources -->
             <env-entry>
                 <env-entry-name>DB_RESOURCES</env-entry-name>

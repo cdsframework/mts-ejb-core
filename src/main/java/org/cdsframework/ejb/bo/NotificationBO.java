@@ -27,13 +27,17 @@
 package org.cdsframework.ejb.bo;
 
 import java.util.ArrayList;
+import java.util.List;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import org.cdsframework.base.BaseBO;
 import org.cdsframework.dto.NotificationDTO;
 import org.cdsframework.dto.NotificationLogDTO;
+import org.cdsframework.dto.NotificationRecipientDTO;
 import org.cdsframework.dto.PropertyBagDTO;
 import org.cdsframework.dto.SessionDTO;
+import org.cdsframework.enumeration.CoreErrorCode;
+import org.cdsframework.enumeration.NotificationStatus;
 import org.cdsframework.exceptions.AuthenticationException;
 import org.cdsframework.exceptions.AuthorizationException;
 import org.cdsframework.exceptions.ConstraintViolationException;
@@ -52,6 +56,9 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
     @EJB
     private NotificationLogBO notificationLogBO;
 
+    @EJB
+    private NotificationRecipientBO notificationRecipientBO;
+
     @Override
     protected void preUpdate(NotificationDTO baseDTO, Class queryClass, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
             throws ConstraintViolationException, NotFoundException, MtsException, ValidationException, AuthenticationException, AuthorizationException {
@@ -69,6 +76,14 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
         logger.debug("preUpdate statusChanged: ", statusChanged);
 
         if (statusChanged) {
+            if (statusChanged && baseDTO.getStatus() == NotificationStatus.SCHEDULED) {
+                NotificationRecipientDTO notificationRecipientDTO =new NotificationRecipientDTO();
+                notificationRecipientDTO.setNotificationId(baseDTO.getNotificationId());
+                List<NotificationRecipientDTO> notificationRecipientDTOs = notificationRecipientBO.findByQueryListMain(notificationRecipientDTO, NotificationRecipientDTO.ByNotificationId.class, new ArrayList<Class>(), sessionDTO, propertyBagDTO);
+                if (notificationRecipientDTOs.isEmpty() && baseDTO.getNotificationRecipientDTOs().isEmpty()) {
+                    throw new ValidationException("There are no recipients for the notification. Recipients must be added in order to schedule a notification.");
+                }
+            }
             // log it
             NotificationLogDTO notificationLogDTO = new NotificationLogDTO();
             notificationLogDTO.setNotificationId(baseDTO.getNotificationId());

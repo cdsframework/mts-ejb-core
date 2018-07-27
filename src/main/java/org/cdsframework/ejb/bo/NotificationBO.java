@@ -106,7 +106,7 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
             baseDTO.addOrUpdateChildDTO(notificationLogDTO);
         }
 
-        if (!timerCall) {
+        if (!timerCall && (baseDTO.getStatus() == NotificationStatus.DRAFT || baseDTO.getStatus() == NotificationStatus.SCHEDULED)) {
             Date epochDate;
             try {
                 epochDate = new SimpleDateFormat("MM/dd/yyyy").parse("01/03/1970");

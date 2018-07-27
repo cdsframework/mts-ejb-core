@@ -151,7 +151,9 @@ public class NotificationMgrTimer {
             notificationStateBO.updateMain(userState, Update.class, AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
         }
         notificationDTO.setStatus(NotificationStatus.SENT);
-        notificationBO.updateMain(notificationDTO, Update.class, AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+        PropertyBagDTO updatePropertyBagDTO = new PropertyBagDTO();
+        updatePropertyBagDTO.put("TIMER_CALL", true);
+        notificationBO.updateMain(notificationDTO, Update.class, AuthenticationUtils.getInternalSessionDTO(), updatePropertyBagDTO);
     }
 
     private void processCanceled() {

@@ -69,6 +69,7 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
         final String METHODNAME = "preAddOrUpdate ";
 
         boolean statusChanged = false;
+        Boolean timerCall = propertyBagDTO.get("TIMER_CALL", false);
 
         if (operation != Operation.ADD && !StringUtils.isEmpty(baseDTO.getNotificationId())) {
             // get the notification from the db
@@ -105,22 +106,24 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
             baseDTO.addOrUpdateChildDTO(notificationLogDTO);
         }
 
-        Date epochDate;
-        try {
-            epochDate = new SimpleDateFormat("MM/dd/yyyy").parse("01/03/1970");
-        } catch (ParseException e) {
-            epochDate = new Date();
-        }
+        if (!timerCall) {
+            Date epochDate;
+            try {
+                epochDate = new SimpleDateFormat("MM/dd/yyyy").parse("01/03/1970");
+            } catch (ParseException e) {
+                epochDate = new Date();
+            }
 
-        logger.warn(METHODNAME, "baseDTO.getNotificationTime(): ", baseDTO.getNotificationTime());
+            logger.warn(METHODNAME, "baseDTO.getNotificationTime(): ", baseDTO.getNotificationTime());
 
-        if (baseDTO.getNotificationTime() != null && baseDTO.getNotificationTime().before(epochDate)) {
-            baseDTO.setNotificationTime(null);
-            throw new ValidationException("The notifcation date cannot be empty.");
-        }
+            if (baseDTO.getNotificationTime() != null && baseDTO.getNotificationTime().before(epochDate)) {
+                baseDTO.setNotificationTime(null);
+                throw new ValidationException("The notifcation date cannot be empty.");
+            }
 
-        if (baseDTO.getNotificationTime() != null && baseDTO.getNotificationTime().before(new Date())) {
-            throw new ValidationException("The notifcation date cannot be in the past.");
+            if (baseDTO.getNotificationTime() != null && baseDTO.getNotificationTime().before(new Date())) {
+                throw new ValidationException("The notifcation date cannot be in the past.");
+            }
         }
 
         return super.preAddOrUpdate(baseDTO, operation, queryClass, sessionDTO, propertyBagDTO);

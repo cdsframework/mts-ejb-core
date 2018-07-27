@@ -29,6 +29,8 @@
  */
 package org.cdsframework.ejb.bo;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,7 +52,6 @@ import org.cdsframework.exceptions.ConstraintViolationException;
 import org.cdsframework.exceptions.MtsException;
 import org.cdsframework.exceptions.NotFoundException;
 import org.cdsframework.exceptions.ValidationException;
-import org.cdsframework.group.Add;
 
 /**
  *
@@ -65,6 +66,7 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
     @Override
     protected Map<String, Object> preAddOrUpdate(NotificationDTO baseDTO, Operation operation, Class queryClass, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
             throws ValidationException, NotFoundException, ConstraintViolationException, MtsException, AuthenticationException, AuthorizationException {
+        final String METHODNAME = "preAddOrUpdate ";
 
         boolean statusChanged = false;
 
@@ -84,7 +86,7 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
             }
         }
 
-        logger.debug("preUpdate statusChanged: ", statusChanged);
+        logger.debug(METHODNAME, "preUpdate statusChanged: ", statusChanged);
 
         if (statusChanged || operation == Operation.ADD) {
             if (baseDTO.getStatus() == NotificationStatus.SCHEDULED) {
@@ -101,6 +103,20 @@ public class NotificationBO extends BaseBO<NotificationDTO> {
             notificationLogDTO.setStatus(baseDTO.getStatus());
             notificationLogDTO.setType(baseDTO.getType());
             baseDTO.addOrUpdateChildDTO(notificationLogDTO);
+        }
+
+        Date epochDate;
+        try {
+            epochDate = new SimpleDateFormat("MM/dd/yyyy").parse("01/03/1970");
+        } catch (ParseException e) {
+            epochDate = new Date();
+        }
+
+        logger.warn(METHODNAME, "baseDTO.getNotificationTime(): ", baseDTO.getNotificationTime());
+
+        if (baseDTO.getNotificationTime() != null && baseDTO.getNotificationTime().before(epochDate)) {
+            baseDTO.setNotificationTime(null);
+            throw new ValidationException("The notifcation date cannot be empty.");
         }
 
         if (baseDTO.getNotificationTime() != null && baseDTO.getNotificationTime().before(new Date())) {

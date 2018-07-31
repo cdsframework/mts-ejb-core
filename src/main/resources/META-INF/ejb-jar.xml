@@ -161,6 +161,22 @@
                 <env-entry-value>GLASSFISH</env-entry-value>
             </env-entry>
 
+            <env-entry> 
+                <env-entry-name>BUILD_VERSION</env-entry-name> 
+                <env-entry-type>java.lang.String</env-entry-type> 
+                <env-entry-value>${project.version}</env-entry-value> 
+            </env-entry> 
+            <env-entry> 
+                <env-entry-name>BUILD_TIMESTAMP</env-entry-name> 
+                <env-entry-type>java.lang.String</env-entry-type> 
+                <env-entry-value>${build.timestamp}</env-entry-value> 
+            </env-entry> 
+            <env-entry> 
+                <env-entry-name>BUILD_NUMBER</env-entry-name> 
+                <env-entry-type>java.lang.String</env-entry-type> 
+                <env-entry-value>${changeSet}</env-entry-value> 
+            </env-entry> 
+
         </session>
     </enterprise-beans>
     <interceptors>

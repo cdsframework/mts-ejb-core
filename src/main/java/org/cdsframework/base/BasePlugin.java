@@ -120,7 +120,6 @@ public abstract class BasePlugin {
             initializeDb();
             postProcess();
             Constants.INSTALLED_PLUGINS.add(pluginName);
-            initializeCachedDTOs();
             registerUserPreferences();
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -323,31 +322,6 @@ public abstract class BasePlugin {
     protected <S extends BaseDTO> void initializeDbTables(Class<S>... dtoClasses) throws MtsException {
         for (Class<S> dtoClass : dtoClasses) {
             dbMGRLocal.initializePersistenceMechanism(dtoClass);
-        }
-    }
-
-    private void initializeCachedDTOs() {
-        String jndiRoot = "java:app/mts-ejb-" + pluginName;
-        logger.info("Initializing cached object for jndi root: ", jndiRoot);
-        try {
-            Class[] classes = ClassUtils.getClassesFromClasspath("org.cdsframework.dto");
-            for (Class clazz : classes) {
-                if (BaseDTO.class.isAssignableFrom(clazz)) {
-                    JndiReference jndiReference = getJndiReference(clazz);
-                    if (jndiReference != null) {
-                        if (jndiRoot.equals(jndiReference.root())) {
-                            if (DTOUtils.isCached(clazz)) {
-                                EJBUtils.getDtoBo(clazz);
-                                logger.info("Initializing: ", clazz.getCanonicalName());
-                            }
-                        }
-                    } else {
-                        logger.error("DTO is missing its JNDI reference! ", clazz);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error(e);
         }
     }
 

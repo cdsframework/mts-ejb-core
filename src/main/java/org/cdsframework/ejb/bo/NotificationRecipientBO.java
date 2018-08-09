@@ -171,10 +171,10 @@ public class NotificationRecipientBO extends BaseBO<NotificationRecipientDTO> {
         String note;
         switch (operation) {
             case ADD:
-                note = "A recipient was added for " + recipientType.getLabel() + ":" + recipient + ".";
+                note = "A recipient was added " + recipientType.getLabel() + ":" + recipient + ".";
                 break;
             case DELETE:
-                note = "A recipient was deleted for " + recipientType.getLabel() + ":" + recipient + ".";
+                note = "A recipient was deleted " + recipientType.getLabel() + ":" + recipient + ".";
                 break;
             case UPDATE:
                 NotificationRecipientDTO oldNotificationRecipientDTO = propertyBagDTO.get("oldNotificationRecipientDTO", NotificationRecipientDTO.class);

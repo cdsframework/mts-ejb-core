@@ -55,7 +55,7 @@ public class EJBUtils {
     private static final String SECURITYMGRLOOKUP = "java:module/SecurityMGRInternal";
     private static final String VALIDATORFACTORYLOOKUP = "ValidatorFactory";
     private static final String TRANSACTIONSYNCHRONIZATIONREGISTRY = "TransactionSynchronizationRegistry";
-    private static final String PROPERTYMGRLOOKUP = "java:app/mts-ejb-core-support/PropertyMGRLocal";
+    private static final String PROPERTYMGRLOOKUP = "java:app/mts-ejb-core/PropertyMGRLocal";
 
     private static final Map<String, Object> cacheMap = new HashMap<String, Object>();
 

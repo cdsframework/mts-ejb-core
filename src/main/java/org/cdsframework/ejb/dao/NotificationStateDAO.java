@@ -57,7 +57,7 @@ public class NotificationStateDAO extends BaseDAO<NotificationStateDTO> {
             protected void getCallbackNamedParameters(MapSqlParameterSource namedParameters, BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
                     throws MtsException {
                 String notificationId = propertyBagDTO.get("notification_id", String.class);
-                logger.warn("getCallbackNamedParameters ByNotificationId notificationId=", notificationId);
+                logger.debug("getCallbackNamedParameters ByNotificationId notificationId=", notificationId);
                 namedParameters.addValue("notification_id", notificationId);
             }
         }, false);
@@ -89,7 +89,7 @@ public class NotificationStateDAO extends BaseDAO<NotificationStateDTO> {
             protected void getCallbackNamedParameters(MapSqlParameterSource namedParameters, BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
                     throws MtsException {
                 String userId = propertyBagDTO.get("user_id", String.class);
-                logger.warn("getCallbackNamedParameters ByUserId userId=", userId);
+                logger.debug("getCallbackNamedParameters ByUserId userId=", userId);
                 namedParameters.addValue("user_id", userId);
             }
 
@@ -107,7 +107,7 @@ public class NotificationStateDAO extends BaseDAO<NotificationStateDTO> {
             protected void getCallbackNamedParameters(MapSqlParameterSource namedParameters, BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
                     throws MtsException {
                 String userId = propertyBagDTO.get("user_id", String.class);
-                logger.warn("getCallbackNamedParameters UnreadMessageCount userId=", userId);
+                logger.debug("getCallbackNamedParameters UnreadMessageCount userId=", userId);
                 namedParameters.addValue("user_id", userId);
             }
 
@@ -127,7 +127,7 @@ public class NotificationStateDAO extends BaseDAO<NotificationStateDTO> {
             protected void getCallbackNamedParameters(MapSqlParameterSource namedParameters, BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
                     throws MtsException {
                 String userId = propertyBagDTO.get("user_id", String.class);
-                logger.warn("getCallbackNamedParameters ByDashboard userId=", userId);
+                logger.debug("getCallbackNamedParameters ByDashboard userId=", userId);
                 namedParameters.addValue("user_id", userId);
             }
 
@@ -147,7 +147,7 @@ public class NotificationStateDAO extends BaseDAO<NotificationStateDTO> {
             protected void getCallbackNamedParameters(MapSqlParameterSource namedParameters, BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
                     throws MtsException {
                 String userId = propertyBagDTO.get("user_id", String.class);
-                logger.warn("getCallbackNamedParameters ByInbox userId=", userId);
+                logger.debug("getCallbackNamedParameters ByInbox userId=", userId);
                 namedParameters.addValue("user_id", userId);
             }
 

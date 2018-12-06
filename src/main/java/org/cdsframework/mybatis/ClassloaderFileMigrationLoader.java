@@ -7,22 +7,25 @@
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version. You should have received a copy of the GNU Lesser
- * General Public License along with this program. If not, see <http://www.gnu.org/licenses/> for more
- * details.
+ * General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/> for more details.
  *
- * The above-named contributors (HLN Consulting, LLC) are also licensed by the New York City
- * Department of Health and Mental Hygiene, Bureau of Immunization to have (without restriction,
- * limitation, and warranty) complete irrevocable access and rights to this project.
+ * The above-named contributors (HLN Consulting, LLC) are also licensed by the
+ * New York City Department of Health and Mental Hygiene, Bureau of Immunization
+ * to have (without restriction, limitation, and warranty) complete irrevocable
+ * access and rights to this project.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; THE
- * SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING,
- * BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR
- * ANY CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN CONNECTION WITH
- * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * For more information about this software, see https://www.hln.com/services/open-source/ or send
- * correspondence to ice@hln.com.
+ * For more information about this software, see
+ * https://www.hln.com/services/open-source/ or send correspondence to
+ * ice@hln.com.
  */
 package org.cdsframework.mybatis;
 
@@ -69,15 +72,16 @@ public class ClassloaderFileMigrationLoader implements MigrationLoader {
     public boolean scriptExists() {
         return getMigrations().size() > 0;
     }
+
     /**
      * Retrieve the migration Change objects from the classloader.
-     * 
-     * @return 
+     *
+     * @return
      */
     @Override
     public List<Change> getMigrations() {
         final String METHODNAME = "getMigrations ";
-        List<Change> migrations = new ArrayList<Change>();
+        List<Change> migrations = new ArrayList<>();
         InputStream inputStream = null;
         try {
             logger.debug(METHODNAME, "scriptPath: ", scriptPath);
@@ -103,7 +107,7 @@ public class ClassloaderFileMigrationLoader implements MigrationLoader {
             if (inputStream != null) {
                 try {
                     inputStream.close();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     logger.error(e);
                 }
             }
@@ -113,9 +117,9 @@ public class ClassloaderFileMigrationLoader implements MigrationLoader {
 
     /**
      * Parse a Change object from the script filename.
-     * 
+     *
      * @param filename
-     * @return 
+     * @return
      */
     private Change parseChangeFromFilename(String filename) {
         try {
@@ -140,10 +144,10 @@ public class ClassloaderFileMigrationLoader implements MigrationLoader {
 
     /**
      * Retrieve a Reader object for a Change object.
-     * 
+     *
      * @param change
      * @param undo
-     * @return 
+     * @return
      */
     @Override
     public Reader getScriptReader(Change change, boolean undo) {
@@ -155,17 +159,15 @@ public class ClassloaderFileMigrationLoader implements MigrationLoader {
                 throw new MigrationException(scriptPath + change.getFilename() + " was not found!");
             }
             return new MigrationReader(new File(resource.toURI()), charset, undo, properties);
-        } catch (IOException e) {
-            throw new MigrationException("Error reading " + change.getFilename(), e);
-        } catch (URISyntaxException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new MigrationException("Error reading " + change.getFilename(), e);
         }
     }
 
     /**
      * Retrieve a bootstrap Reader object.
-     * 
-     * @return 
+     *
+     * @return
      */
     @Override
     public Reader getBootstrapReader() {
@@ -181,10 +183,27 @@ public class ClassloaderFileMigrationLoader implements MigrationLoader {
                 return new MigrationReader(bootstrap, charset, false, properties);
             }
             return null;
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new MigrationException("Error reading bootstrap.sql", e);
-        } catch (URISyntaxException e) {
-            throw new MigrationException("Error reading bootstrap.sql", e);
+        }
+    }
+
+    @Override
+    public Reader getOnAbortReader() {
+        final String METHODNAME = "getOnAbortReader ";
+        try {
+            logger.info(METHODNAME, "applying abort: ", scriptPath, "abort.sql");
+            URL resource = classLoader.getResource(scriptPath + "abort.sql");
+            if (resource == null) {
+                throw new MigrationException(scriptPath + "abort.sql was not found!");
+            }
+            File abort = new File(resource.toURI());
+            if (abort.exists()) {
+                return new MigrationReader(abort, charset, false, properties);
+            }
+            return null;
+        } catch (IOException | URISyntaxException e) {
+            throw new MigrationException("Error reading abort.sql", e);
         }
     }
 

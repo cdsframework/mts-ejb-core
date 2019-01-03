@@ -7,30 +7,35 @@
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version. You should have received a copy of the GNU Lesser
- * General Public License along with this program. If not, see <http://www.gnu.org/licenses/> for more
- * details.
+ * General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/> for more details.
  *
- * The above-named contributors (HLN Consulting, LLC) are also licensed by the New York City
- * Department of Health and Mental Hygiene, Bureau of Immunization to have (without restriction,
- * limitation, and warranty) complete irrevocable access and rights to this project.
+ * The above-named contributors (HLN Consulting, LLC) are also licensed by the
+ * New York City Department of Health and Mental Hygiene, Bureau of Immunization
+ * to have (without restriction, limitation, and warranty) complete irrevocable
+ * access and rights to this project.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; THE
- * SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING,
- * BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR
- * ANY CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN CONNECTION WITH
- * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * For more information about this software, see https://www.hln.com/services/open-source/ or send
- * correspondence to ice@hln.com.
+ * For more information about this software, see
+ * https://www.hln.com/services/open-source/ or send correspondence to
+ * ice@hln.com.
  */
 package org.cdsframework.ejb.mgr;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import org.cdsframework.base.BaseMGR;
 import org.cdsframework.dto.AppDTO;
 import org.cdsframework.dto.SessionDTO;
 import org.cdsframework.dto.UserDTO;
+import org.cdsframework.ejb.bo.UserBO;
 import org.cdsframework.ejb.local.PropertyMGRLocal;
 import org.cdsframework.ejb.remote.SecurityMGRRemote;
 import org.cdsframework.enumeration.ExceptionReason;
@@ -52,10 +57,15 @@ import org.cdsframework.ejb.local.SecurityMGRInternal;
 import org.cdsframework.ejb.local.UserSecurityMGRLocal;
 import org.cdsframework.enumeration.LogLevel;
 import org.cdsframework.enumeration.PermissionType;
+import org.cdsframework.exceptions.ConstraintViolationException;
+import org.cdsframework.exceptions.ValidationException;
 import org.cdsframework.security.UserSecuritySchemePermissionMap;
+import org.cdsframework.util.AuthenticationUtils;
 
 /**
- * The SecurityMGR implements the {@link org.cdsframework.ejb.remote.SecurityMGRRemote [SecurityMGRRemote]} interface.
+ * The SecurityMGR implements the
+ * {@link org.cdsframework.ejb.remote.SecurityMGRRemote [SecurityMGRRemote]}
+ * interface.
  *
  * @author HLN Consulting, LLC
  */
@@ -70,6 +80,8 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
     private PropertyMGRLocal propertyMGRLocal;
     @EJB
     private UserSecurityMGRLocal userSecurityMGRLocal;
+    @EJB
+    private UserBO userBO;
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     @Override
@@ -90,22 +102,44 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
                 logger.error("User has exceeded their max failed login attempts.");
                 throw new AuthenticationException(ExceptionReason.MAX_FAILED_LOGINS);
             }
+
             if (userDTO.isDisabled()) {
                 logger.error("User account is disabled.");
                 throw new AuthenticationException(ExceptionReason.USER_DISABLED);
             }
+
+            // Skip checking user password expiration if the change password flag is set
             if (userDTO.isExpired()) {
-                logger.error("User account is expired.");
-                throw new AuthenticationException(ExceptionReason.USER_EXPIRED);
+                // If the user's password is expired, check if logins with expired password are allowed
+                if (!userDTO.isChangePassword()) {
+                    Boolean allowChange = (Boolean) propertyMGRLocal.get("ALLOW_CHANGE_EXPIRED_PASSWORD");
+                    if ((allowChange != null) && allowChange) {
+                        logger.warn("User account is expired. Setting change password");
+                        userDTO.setChangePassword(true);
+                        try {
+                            userBO.updateMainNew(userDTO, UserDTO.SetChangePassword.class, AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+                        } catch (ValidationException | ConstraintViolationException e) {
+                            throw new MtsException("Error updating user '" + userDTO.getUsername(), e);
+                        }
+                        throw new AuthenticationException(ExceptionReason.CHANGE_PASSWORD);
+                    } else {
+                        logger.error("User account is expired.");
+                        throw new AuthenticationException(ExceptionReason.USER_EXPIRED);
+                    }
+                }
             }
-            AppDTO appDTO = securityMGRInternal.getAppDTO(appName);
+
+            if (userDTO.isChangePassword()) {
+                throw new AuthenticationException(ExceptionReason.CHANGE_PASSWORD);
+            }
+
             result = securityMGRInternal.authenticate(userDTO, password);
         } catch (NotFoundException nfe) {
             logger.error(username, " not found.");
             logger.debug(nfe);
             throw new AuthenticationException(ExceptionReason.BAD_CREDENTIALS);
         } finally {
-            logger.logDuration(LogLevel.DEBUG, METHODNAME + " username=" + username, start);                                                                
+            logger.logDuration(LogLevel.DEBUG, METHODNAME + " username=" + username, start);
         }
         return result;
     }
@@ -139,7 +173,7 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
             logger.error(nfe);
             throw new AuthenticationException(ExceptionReason.BAD_CREDENTIALS);
         } finally {
-            logger.logDuration(LogLevel.DEBUG, METHODNAME + " username=" + username, start);                                                                
+            logger.logDuration(LogLevel.DEBUG, METHODNAME + " username=" + username, start);
         }
         return sessionDTO;
     }
@@ -198,7 +232,7 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
         boolean result;
         try {
             result = securityMGRInternal.isSessionValid(sessionDTO);
-        } catch (Exception nfe) {
+        } catch (AuthenticationException | AuthorizationException | MtsException | NotFoundException nfe) {
             logger.error(nfe.getMessage());
             result = false;
         }
@@ -209,7 +243,7 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
     public Map<String, UserSecuritySchemePermissionMap> getUserSecuritySchemePermissionMaps(SessionDTO session)
             throws AuthenticationException, AuthorizationException, MtsException {
         final String METHODNAME = "geUserSecuritySchemePermissionMaps ";
-        Map<String, UserSecuritySchemePermissionMap> result = new HashMap<String, UserSecuritySchemePermissionMap>();
+        Map<String, UserSecuritySchemePermissionMap> result = new HashMap<>();
         try {
             PropertyBagDTO propertyBagDTO = new PropertyBagDTO();
             propertyBagDTO.put("checkAuthSrc", "getUserSecuritySchemePermissionMaps");
@@ -219,5 +253,26 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
             logger.error(METHODNAME, e);
         }
         return result;
+    }
+
+    @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public boolean changePassword(String userName, String currentPassword, String newPassword, String confirmPassword)
+            throws AuthenticationException, AuthorizationException, ConstraintViolationException, ValidationException, NotFoundException, MtsException {
+        final String METHODNAME = "changePassword ";
+        UserDTO userDTO = new UserDTO();
+        userDTO.setUsername(userName);
+        userDTO = userBO.findByQueryMain(userDTO, UserDTO.DtoByUsername.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+
+        logger.info(METHODNAME, userDTO.getUsername(), "user retrieval succeeded");
+
+        PropertyBagDTO propertyBagDTO = new PropertyBagDTO();
+        propertyBagDTO.put("oldPassword", currentPassword);
+        propertyBagDTO.put("newPassword", newPassword);
+        propertyBagDTO.put("confirmPassword", confirmPassword);
+
+        userBO.customSaveMain(userDTO, UserDTO.UpdatePasswordHash.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), propertyBagDTO);
+        logger.info(METHODNAME, userDTO.getUsername(), " password change succeeded");
+        return true;
     }
 }

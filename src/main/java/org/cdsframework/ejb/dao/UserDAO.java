@@ -58,6 +58,15 @@ public class UserDAO extends BaseDAO<UserDTO> {
             }
         }, false);
 
+        this.registerDML(UserDTO.SetChangePassword.class, new QueryCallback(getDtoTableName()) {
+
+            @Override
+            protected String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {
+                String sql = "update mt_user set change_password = 'Y' where user_id = :user_id";
+                return sql;
+            }
+            
+        }, false);
         
         this.registerDML(UserDTO.DtoByUsername.class, new QueryCallback(getDtoTableName()) {
             @Override

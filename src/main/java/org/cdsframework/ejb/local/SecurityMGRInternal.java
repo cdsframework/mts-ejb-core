@@ -96,6 +96,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
     private SessionBO sessionBO;
     @EJB
     private UserSecurityMGRLocal userSecurityMGRLocal;
+    
     private static final List<Class> defaultChildClassList = new ArrayList<Class>();
 
     /**
@@ -170,7 +171,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
         // - short circuit if we have already checked this permission
         Map<Class, List<PermissionType>> checkAuthMap = propertyBagDTO.get("checkAuthMap", Map.class);
         if (checkAuthMap == null) {
-            checkAuthMap = new HashMap<Class, List<PermissionType>>();
+            checkAuthMap = new HashMap<>();
             propertyBagDTO.put("checkAuthMap", checkAuthMap);
         }
         if (checkAuthMap.containsKey(dtoClass) && checkAuthMap.get(dtoClass).contains(permissionType)) {
@@ -185,7 +186,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
         }
         List<PermissionType> checkAuthClassPermList = checkAuthMap.get(dtoClass);
         if (checkAuthClassPermList == null) {
-            checkAuthClassPermList = new ArrayList<PermissionType>();
+            checkAuthClassPermList = new ArrayList<>();
             checkAuthMap.put(dtoClass, checkAuthClassPermList);
         }
 
@@ -452,7 +453,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
         boolean result;
         if (!skipFind) {
             try {
-                sessionDTO = sessionBO.findByPrimaryKeyMain(sessionDTO, new ArrayList<Class>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+                sessionDTO = sessionBO.findByPrimaryKeyMain(sessionDTO, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
             } catch (NotFoundException e) {
                 logger.error(METHODNAME, "session was not found - invalid.");
                 throw new AuthenticationException("Session ID not found: " + sessionDTO.getSessionId(), ExceptionReason.MISSING_ENTRY);
@@ -519,7 +520,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
             userDTO = userBO.findByQueryMain(
                     userDTO,
                     UserDTO.DtoByUsername.class,
-                    new ArrayList<Class>(),
+                    new ArrayList<>(),
                     AuthenticationUtils.getInternalSessionDTO(),
                     new PropertyBagDTO());
             if (userDTO == null) {
@@ -544,7 +545,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
             appDTO = appBO.findByQueryMain(
                     appDTO,
                     AppDTO.DtoByAppName.class,
-                    new ArrayList<Class>(),
+                    new ArrayList<>(),
                     AuthenticationUtils.getInternalSessionDTO(),
                     new PropertyBagDTO());
             if (appDTO == null) {
@@ -601,7 +602,12 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
                 } else {
                     // check new password algo
                     if (userDTO.getPasswordHash() != null) {
-                        result = PasswordHash.validatePassword(password, userDTO.getPasswordHash());
+                        try {
+                            result = PasswordHash.validatePassword(password, userDTO.getPasswordHash());
+                        } catch (Throwable t) {
+                            logger.warn(METHODNAME, t.getMessage());
+                            result = false;
+                        }
                     } else {
                         logger.error(METHODNAME, "userDTO.getPasswordHash() is null!");
                     }
@@ -705,6 +711,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
             logger.debug(METHODNAME, "About to call Security Map Implementations");
             Map<String, BaseSecurityInterface> securityImpl = userSecurityMGRLocal.getSecurityImpl();
             for (Map.Entry<String, BaseSecurityInterface> mapEntry : securityImpl.entrySet()) {
+                logger.info("Process post create session using class: " + mapEntry.getValue().getClass().getName() );
                 mapEntry.getValue().postCreateSession(sessionDTO);
             }
 

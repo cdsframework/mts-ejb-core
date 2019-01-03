@@ -7,22 +7,25 @@
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version. You should have received a copy of the GNU Lesser
- * General Public License along with this program. If not, see <http://www.gnu.org/licenses/> for more
- * details.
+ * General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/> for more details.
  *
- * The above-named contributors (HLN Consulting, LLC) are also licensed by the New York City
- * Department of Health and Mental Hygiene, Bureau of Immunization to have (without restriction,
- * limitation, and warranty) complete irrevocable access and rights to this project.
+ * The above-named contributors (HLN Consulting, LLC) are also licensed by the
+ * New York City Department of Health and Mental Hygiene, Bureau of Immunization
+ * to have (without restriction, limitation, and warranty) complete irrevocable
+ * access and rights to this project.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; THE
- * SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING,
- * BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR
- * ANY CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN CONNECTION WITH
- * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * For more information about this software, see https://www.hln.com/services/open-source/ or send
- * correspondence to ice@hln.com.
+ * For more information about this software, see
+ * https://www.hln.com/services/open-source/ or send correspondence to
+ * ice@hln.com.
  */
 package org.cdsframework.ejb.bo;
 
@@ -42,6 +45,7 @@ import org.cdsframework.dto.PropertyBagDTO;
 import org.cdsframework.dto.SessionDTO;
 import org.cdsframework.dto.UserDTO;
 import org.cdsframework.dto.UserPreferenceDTO;
+import org.cdsframework.ejb.local.PropertyMGRLocal;
 import org.cdsframework.ejb.local.SecurityMGRInternal;
 import org.cdsframework.ejb.local.UserSecurityMGRLocal;
 import org.cdsframework.enumeration.CoreErrorCode;
@@ -63,6 +67,7 @@ import org.cdsframework.util.ObjectUtils;
 import org.cdsframework.util.PasswordHash;
 import org.cdsframework.util.StringUtils;
 import org.cdsframework.util.support.DeepCopy;
+import org.joda.time.LocalDate;
 
 @Stateless
 public class UserBO extends BaseBO<UserDTO> {
@@ -71,7 +76,10 @@ public class UserBO extends BaseBO<UserDTO> {
     private SecurityMGRInternal securityMGRInternal;
     @EJB
     private UserSecurityMGRLocal userSecurityMGRLocal;
-    private Map<String, UserPreferenceDTO> defaultPreferenceMap = new HashMap<String, UserPreferenceDTO>();
+    @EJB
+    private PropertyMGRLocal propertyMGRLocal;
+
+    private final Map<String, UserPreferenceDTO> defaultPreferenceMap = new HashMap<String, UserPreferenceDTO>();
 
     @Override
     protected void preAdd(UserDTO baseDTO, Class queryClass, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
@@ -87,13 +95,15 @@ public class UserBO extends BaseBO<UserDTO> {
                     || !userDTO.getPassword().equals(userDTO.getPasswordConfirm())) {
                 throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordMismatch, "Mismatched password"));
             }
+            if (!validatePasswordCriteria(userDTO.getPassword())) {
+                throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordCriteriaViolation, getPasswordCriteriaViolationMessage()));
+            }
             try {
                 userDTO.setPasswordHash(PasswordHash.createHash(userDTO.getPassword()));
-            } catch (InvalidKeySpecException e) {
-                throw new MtsException(e.getMessage(), e);
-            } catch (NoSuchAlgorithmException e) {
+            } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
                 throw new MtsException(e.getMessage(), e);
             }
+            setPasswordExpiration(userDTO);
         }
     }
 
@@ -106,15 +116,17 @@ public class UserBO extends BaseBO<UserDTO> {
 
         if (userDTO.getPassword() != null
                 && !userDTO.getPassword().isEmpty()) {
+            if (!validatePasswordCriteria(userDTO.getPassword())) {
+                throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordCriteriaViolation, getPasswordCriteriaViolationMessage()));
+            }
             if (userDTO.getPassword().equals(userDTO.getPasswordConfirm())) {
                 try {
                     userDTO.setPasswordHash(PasswordHash.createHash(userDTO.getPassword()));
                     userDTO.setFailedLoginAttempts(0);
+                    setPasswordExpiration(userDTO);
                     logger.debug("UserBO preUpdate new password DML update for user: ", userDTO.getUsername());
                     getDao().update(baseDTO, UserDTO.UpdatePasswordHash.class, sessionDTO, propertyBagDTO);
-                } catch (InvalidKeySpecException e) {
-                    throw new MtsException(e.getMessage(), e);
-                } catch (NoSuchAlgorithmException e) {
+                } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
                     throw new MtsException(e.getMessage(), e);
                 }
             } else {
@@ -132,7 +144,7 @@ public class UserBO extends BaseBO<UserDTO> {
             logger.debug(METHODNAME, "queryClass=", queryClass);
             // logger.warn(METHODNAME, "propertyBagDTO.getPropertyMap()=", propertyBagDTO.getPropertyMap());
             if (parentDTO != null) {
-                UserDTO userDTO = findByPrimaryKeyMain(parentDTO, new ArrayList<Class>(), AuthenticationUtils.getInternalSessionDTO(), propertyBagDTO);
+                UserDTO userDTO = findByPrimaryKeyMain(parentDTO, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), propertyBagDTO);
                 logger.debug(METHODNAME, "userDTO.getUserId()=", userDTO.getUserId());
                 logger.debug(METHODNAME, "userDTO.getUsername()=", userDTO.getUsername());
                 String userId = userDTO.getUserId();
@@ -148,8 +160,13 @@ public class UserBO extends BaseBO<UserDTO> {
                 boolean oldPasswordMatches = securityMGRInternal.authenticate(userDTO, oldPassword);
                 logger.debug(METHODNAME, "oldPasswordMatches=", oldPasswordMatches);
                 if (oldPasswordMatches) {
+                    if (!validatePasswordCriteria(newPassword)) {
+                        throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordCriteriaViolation, getPasswordCriteriaViolationMessage()));
+                    }
                     userDTO.setPassword(newPassword);
                     userDTO.setPasswordConfirm(confirmPassword);
+                    userDTO.setChangePassword(false);
+                    setPasswordExpiration(userDTO);
                     updateMain(userDTO, Update.class, AuthenticationUtils.getInternalSessionDTO(), propertyBagDTO);
                 } else {
                     throw new AuthenticationException("Old password did not match!", ExceptionReason.BAD_CREDENTIALS);
@@ -212,6 +229,171 @@ public class UserBO extends BaseBO<UserDTO> {
                 userDTO.setPassword(null);
                 userDTO.setPasswordConfirm(null);
                 userDTO.setPasswordHash(null);
+            }
+        }
+    }
+
+    private String getPasswordCriteriaViolationMessage() {
+
+        Integer passwordVettingLength = propertyMGRLocal.get("PASSWORD_VETTING_LENGTH", Integer.class);
+        if (passwordVettingLength == null || passwordVettingLength == 0) {
+            passwordVettingLength = 8;
+        }
+
+        Boolean passwordVettingUppercaseReqd = propertyMGRLocal.get("PASSWORD_VETTING_UPPERCASE_REQD", Boolean.class);
+        if (passwordVettingUppercaseReqd == null) {
+            passwordVettingUppercaseReqd = false;
+        }
+
+        Boolean passwordVettingLowercaseReqd = propertyMGRLocal.get("PASSWORD_VETTING_LOWERCASE_REQD", Boolean.class);
+        if (passwordVettingLowercaseReqd == null) {
+            passwordVettingLowercaseReqd = false;
+        }
+
+        Boolean passwordVettingNumberReqd = propertyMGRLocal.get("PASSWORD_VETTING_NUMBER_REQD", Boolean.class);
+        if (passwordVettingNumberReqd == null) {
+            passwordVettingNumberReqd = false;
+        }
+
+        Boolean passwordVettingNonAlphaReqd = propertyMGRLocal.get("PASSWORD_VETTING_NON_ALPHA_REQD", Boolean.class);
+        if (passwordVettingNonAlphaReqd == null) {
+            passwordVettingNonAlphaReqd = false;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder("Passwords must be at least ").append(passwordVettingLength.toString()).append(" characters in length");
+        if (passwordVettingUppercaseReqd) {
+            if (!passwordVettingLowercaseReqd && !passwordVettingNumberReqd && !passwordVettingNonAlphaReqd) {
+                stringBuilder.append(" and ");
+            } else {
+                stringBuilder.append(", ");
+            }
+            stringBuilder.append("contain at least one uppercase letter");
+        }
+        if (passwordVettingLowercaseReqd) {
+            if (!passwordVettingNonAlphaReqd && !passwordVettingNumberReqd) {
+                stringBuilder.append(" and ");
+            } else {
+                stringBuilder.append(", ");
+            }
+            stringBuilder.append("contain at least one lowercase letter");
+        }
+        if (passwordVettingNumberReqd) {
+            if (!passwordVettingNonAlphaReqd) {
+                stringBuilder.append(" and ");
+            } else {
+                stringBuilder.append(", ");
+            }
+            stringBuilder.append("contain at least one number");
+        }
+        if (passwordVettingNonAlphaReqd) {
+            stringBuilder.append(" and contain at least one non-alphanumeric character");
+        }
+
+        return stringBuilder.toString();
+    }
+
+    /**
+     * Checks a password for CIR password rules - should generalize this so the
+     * criteria checker is plug-able
+     *
+     * @param password
+     * @return
+     */
+    private boolean validatePasswordCriteria(String password) {
+        final String METHODNAME = "validatePasswordCriteria ";
+        boolean hasUpper = false;
+        boolean hasLower = false;
+        boolean hasNumber = false;
+        boolean hasNonAlpha = false;
+
+        Integer passwordVettingLength = propertyMGRLocal.get("PASSWORD_VETTING_LENGTH", Integer.class);
+        if (passwordVettingLength == null || passwordVettingLength == 0) {
+            passwordVettingLength = 8;
+        }
+        logger.debug(METHODNAME, "passwordVettingLength=", passwordVettingLength);
+
+        Boolean passwordVettingUppercaseReqd = propertyMGRLocal.get("PASSWORD_VETTING_UPPERCASE_REQD", Boolean.class);
+        if (passwordVettingUppercaseReqd == null) {
+            passwordVettingUppercaseReqd = false;
+        }
+        logger.debug(METHODNAME, "passwordVettingUppercaseReqd=", passwordVettingUppercaseReqd);
+
+        Boolean passwordVettingLowercaseReqd = propertyMGRLocal.get("PASSWORD_VETTING_LOWERCASE_REQD", Boolean.class);
+        if (passwordVettingLowercaseReqd == null) {
+            passwordVettingLowercaseReqd = false;
+        }
+        logger.debug(METHODNAME, "passwordVettingLowercaseReqd=", passwordVettingLowercaseReqd);
+
+        Boolean passwordVettingNumberReqd = propertyMGRLocal.get("PASSWORD_VETTING_NUMBER_REQD", Boolean.class);
+        if (passwordVettingNumberReqd == null) {
+            passwordVettingNumberReqd = false;
+        }
+        logger.debug(METHODNAME, "passwordVettingNumberReqd=", passwordVettingNumberReqd);
+
+        Boolean passwordVettingNonAlphaReqd = propertyMGRLocal.get("PASSWORD_VETTING_NON_ALPHA_REQD", Boolean.class);
+        if (passwordVettingNonAlphaReqd == null) {
+            passwordVettingNonAlphaReqd = false;
+        }
+        logger.debug(METHODNAME, "passwordVettingNonAlphaReqd=", passwordVettingNonAlphaReqd);
+
+        if (password.length() >= passwordVettingLength) {
+            for (Character c : password.toCharArray()) {
+                if (Character.isAlphabetic(c)) {
+                    if (Character.isUpperCase(c)) {
+                        logger.debug(METHODNAME, "found upper!");
+                        hasUpper = true;
+                    } else {
+                        logger.debug(METHODNAME, "found lower!");
+                        hasLower = true;
+                    }
+                } else if (Character.isDigit(c)) {
+                    logger.debug(METHODNAME, "found number!");
+                    hasNumber = true;
+                } else {
+                    logger.debug(METHODNAME, "found non-alpha!");
+                    hasNonAlpha = true;
+                }
+            }
+            if (!passwordVettingUppercaseReqd) {
+                logger.debug(METHODNAME, "not counting uppers");
+                hasUpper = true;
+            }
+            if (!passwordVettingLowercaseReqd) {
+                logger.debug(METHODNAME, "not counting lowers");
+                hasLower = true;
+            }
+            if (!passwordVettingNumberReqd) {
+                logger.debug(METHODNAME, "not counting numbers");
+                hasNumber = true;
+            }
+            if (!passwordVettingNonAlphaReqd) {
+                logger.debug(METHODNAME, "not counting non-alphas");
+                hasNonAlpha = true;
+            }
+
+            logger.debug(METHODNAME, "hasUpper=", hasUpper);
+            logger.debug(METHODNAME, "hasLower=", hasLower);
+            logger.debug(METHODNAME, "hasNumber=", hasNumber);
+            logger.debug(METHODNAME, "hasNonAlpha=", hasNonAlpha);
+
+            return hasUpper && hasLower && hasNumber && hasNonAlpha;
+        }
+        return false;
+    }
+
+    private void setPasswordExpiration(UserDTO userDTO) {
+        final String METHODNAME = "setPasswordExpiration ";
+
+        if (!userDTO.isAppProxyUser()) {
+            Integer expireDays = (Integer) propertyMGRLocal.get("DEFAULT_PASSWORD_EXPIRATION");
+            logger.info(METHODNAME, "expireDays=", expireDays);
+            if (expireDays == null) {
+                expireDays = 90;
+            }
+            if (expireDays != 0) {
+                userDTO.setExpirationDate(LocalDate.now().plusDays(expireDays).toDate());
+            } else {
+                logger.info(METHODNAME, "not setting an expiration");
             }
         }
     }
@@ -304,17 +486,11 @@ public class UserBO extends BaseBO<UserDTO> {
                 logger.debug(METHODNAME, "Registering user preference: ", userPreferenceDTO.getName());
                 defaultPreferenceMap.put(userPreferenceDTO.getName(), userPreferenceDTO);
                 try {
-                    List<UserDTO> userDTOs = findByQueryListMain(new UserDTO(), FindAll.class, new ArrayList<Class>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+                    List<UserDTO> userDTOs = findByQueryListMain(new UserDTO(), FindAll.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
                     for (UserDTO userDTO : userDTOs) {
                         setDefaultPref(userDTO, userPreferenceDTO);
                     }
-                } catch (AuthenticationException e) {
-                    logger.error(e);
-                } catch (AuthorizationException e) {
-                    logger.error(e);
-                } catch (ValidationException e) {
-                    logger.error(e);
-                } catch (NotFoundException e) {
+                } catch (AuthenticationException | AuthorizationException | ValidationException | NotFoundException e) {
                     logger.error(e);
                 }
 
@@ -346,7 +522,7 @@ public class UserBO extends BaseBO<UserDTO> {
             userDTO = new UserDTO();
             userDTO.setUsername(idOrName);
             try {
-                userDTO = findByQueryMain(userDTO, UserDTO.DtoByUsername.class, new ArrayList<Class>(), sessionDTO, new PropertyBagDTO());
+                userDTO = findByQueryMain(userDTO, UserDTO.DtoByUsername.class, new ArrayList<>(), sessionDTO, new PropertyBagDTO());
             } catch (NotFoundException e) {
                 userDTO = null;
             }
@@ -354,7 +530,7 @@ public class UserBO extends BaseBO<UserDTO> {
                 userDTO = new UserDTO();
                 userDTO.setUserId(idOrName);
                 try {
-                    userDTO = findByPrimaryKeyMain(userDTO, new ArrayList<Class>(), sessionDTO, new PropertyBagDTO());
+                    userDTO = findByPrimaryKeyMain(userDTO, new ArrayList<>(), sessionDTO, new PropertyBagDTO());
                 } catch (NotFoundException e) {
                     userDTO = null;
                     logger.debug(METHODNAME, "idOrName not found: ", idOrName);

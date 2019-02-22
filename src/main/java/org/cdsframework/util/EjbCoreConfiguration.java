@@ -26,7 +26,6 @@
  */
 package org.cdsframework.util;
 
-import java.io.FileNotFoundException;
 import java.util.Properties;
 
 /**

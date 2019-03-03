@@ -47,11 +47,13 @@ import org.cdsframework.dto.UserDTO;
 import org.cdsframework.dto.UserPreferenceDTO;
 import org.cdsframework.ejb.local.PropertyMGRLocal;
 import org.cdsframework.ejb.local.SecurityMGRInternal;
+import org.cdsframework.ejb.local.SmtpMGRLocal;
 import org.cdsframework.ejb.local.UserSecurityMGRLocal;
 import org.cdsframework.enumeration.CoreErrorCode;
 import org.cdsframework.enumeration.DTOState;
 import org.cdsframework.enumeration.ExceptionReason;
 import org.cdsframework.enumeration.Operation;
+import org.cdsframework.enumeration.PasswordResetContext;
 import org.cdsframework.exceptions.AuthenticationException;
 import org.cdsframework.exceptions.AuthorizationException;
 import org.cdsframework.exceptions.MtsException;
@@ -63,10 +65,12 @@ import org.cdsframework.group.Update;
 import org.cdsframework.util.AuthenticationUtils;
 import org.cdsframework.util.BrokenRule;
 import org.cdsframework.util.DTOUtils;
+import org.cdsframework.util.EjbCoreConfiguration;
 import org.cdsframework.util.ObjectUtils;
 import org.cdsframework.util.PasswordHash;
 import org.cdsframework.util.StringUtils;
 import org.cdsframework.util.support.DeepCopy;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 @Stateless
@@ -78,32 +82,38 @@ public class UserBO extends BaseBO<UserDTO> {
     private UserSecurityMGRLocal userSecurityMGRLocal;
     @EJB
     private PropertyMGRLocal propertyMGRLocal;
+    @EJB
+    private SmtpMGRLocal smtpMGRLocal;
 
-    private final Map<String, UserPreferenceDTO> defaultPreferenceMap = new HashMap<String, UserPreferenceDTO>();
+    private final Map<String, UserPreferenceDTO> defaultPreferenceMap = new HashMap<>();
 
     @Override
     protected void preAdd(UserDTO baseDTO, Class queryClass, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
             throws ConstraintViolationException, NotFoundException, MtsException, ValidationException,
             AuthenticationException, AuthorizationException {
         Boolean isPreferenceUpdate = propertyBagDTO.get("isPreferenceUpdate", false);
-        if (!isPreferenceUpdate) {
-            UserDTO userDTO = baseDTO;
-            if (userDTO.getPassword() == null
-                    || userDTO.getPassword().isEmpty()
-                    || userDTO.getPasswordConfirm() == null
-                    || userDTO.getPasswordConfirm().isEmpty()
-                    || !userDTO.getPassword().equals(userDTO.getPasswordConfirm())) {
-                throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordMismatch, "Mismatched password"));
+        if (baseDTO.isSendInitialEmail()) {
+            setPasswordToken(baseDTO);
+        } else {
+            if (!isPreferenceUpdate) {
+                UserDTO userDTO = baseDTO;
+                if (userDTO.getPassword() == null
+                        || userDTO.getPassword().isEmpty()
+                        || userDTO.getPasswordConfirm() == null
+                        || userDTO.getPasswordConfirm().isEmpty()
+                        || !userDTO.getPassword().equals(userDTO.getPasswordConfirm())) {
+                    throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordMismatch, "Mismatched password"));
+                }
+                if (!validatePasswordCriteria(userDTO.getPassword())) {
+                    throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordCriteriaViolation, getPasswordCriteriaViolationMessage()));
+                }
+                try {
+                    userDTO.setPasswordHash(PasswordHash.createHash(userDTO.getPassword()));
+                } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+                    throw new MtsException(e.getMessage(), e);
+                }
+                setPasswordExpiration(userDTO);
             }
-            if (!validatePasswordCriteria(userDTO.getPassword())) {
-                throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordCriteriaViolation, getPasswordCriteriaViolationMessage()));
-            }
-            try {
-                userDTO.setPasswordHash(PasswordHash.createHash(userDTO.getPassword()));
-            } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
-                throw new MtsException(e.getMessage(), e);
-            }
-            setPasswordExpiration(userDTO);
         }
     }
 
@@ -126,6 +136,9 @@ public class UserBO extends BaseBO<UserDTO> {
                     setPasswordExpiration(userDTO);
                     logger.debug("UserBO preUpdate new password DML update for user: ", userDTO.getUsername());
                     getDao().update(baseDTO, UserDTO.UpdatePasswordHash.class, sessionDTO, propertyBagDTO);
+                    userDTO.setSendInitialEmail(false);
+                    userDTO.setTokenExpiration(null);
+                    userDTO.setPasswordToken(null);
                 } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
                     throw new MtsException(e.getMessage(), e);
                 }
@@ -148,6 +161,7 @@ public class UserBO extends BaseBO<UserDTO> {
                 logger.debug(METHODNAME, "userDTO.getUserId()=", userDTO.getUserId());
                 logger.debug(METHODNAME, "userDTO.getUsername()=", userDTO.getUsername());
                 String userId = userDTO.getUserId();
+                String passwordToken = ObjectUtils.objectToString(propertyBagDTO.get("passwordToken"));
                 String oldPassword = ObjectUtils.objectToString(propertyBagDTO.get("oldPassword"));
                 String newPassword = ObjectUtils.objectToString(propertyBagDTO.get("newPassword"));
                 String confirmPassword = ObjectUtils.objectToString(propertyBagDTO.get("confirmPassword"));
@@ -157,12 +171,9 @@ public class UserBO extends BaseBO<UserDTO> {
                 if (!confirmPassword.equals(newPassword)) {
                     throw new NotFoundException("confirmPassword and newPassword do not match!");
                 }
-                boolean oldPasswordMatches = securityMGRInternal.authenticate(userDTO, oldPassword);
-                logger.debug(METHODNAME, "oldPasswordMatches=", oldPasswordMatches);
-                if (oldPasswordMatches) {
-                    if (!validatePasswordCriteria(newPassword)) {
-                        throw new ValidationException(new BrokenRule(CoreErrorCode.PasswordCriteriaViolation, getPasswordCriteriaViolationMessage()));
-                    }
+                boolean oldPasswordOrTokenMatches = securityMGRInternal.authenticate(userDTO, oldPassword, passwordToken);
+                logger.debug(METHODNAME, "oldPasswordOrTokenMatches=", oldPasswordOrTokenMatches);
+                if (oldPasswordOrTokenMatches) {
                     userDTO.setPassword(newPassword);
                     userDTO.setPasswordConfirm(confirmPassword);
                     userDTO.setChangePassword(false);
@@ -174,6 +185,13 @@ public class UserBO extends BaseBO<UserDTO> {
             } else {
                 throw new NotFoundException("UserDTO was null!");
             }
+            return null;
+        } else if (queryClass == UserDTO.UpdatePasswordToken.class) {
+            setPasswordToken(parentDTO);
+            logger.info(METHODNAME, "parentDTO.getDTOState()=", parentDTO.getDTOState());
+            updateMain(parentDTO, Update.class, AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+            generateTokenEmail(parentDTO, propertyBagDTO);
+            logger.info(METHODNAME, "parentDTO.getDTOState()=", parentDTO.getDTOState());
             return null;
         } else {
             return super.customSave(parentDTO, queryClass, childClassDTOs, sessionDTO, propertyBagDTO);
@@ -194,6 +212,10 @@ public class UserBO extends BaseBO<UserDTO> {
             setDefaultPrefs(baseDTO);
         }
         userSecurityMGRLocal.refreshUserSecuritySchemePermissionMap(baseDTO);
+        if (baseDTO.isSendInitialEmail()) {
+            propertyBagDTO.put("context", PasswordResetContext.NEW_ACCOUNT);
+            generateTokenEmail(baseDTO, propertyBagDTO);
+        }
     }
 
     @Override
@@ -229,6 +251,8 @@ public class UserBO extends BaseBO<UserDTO> {
                 userDTO.setPassword(null);
                 userDTO.setPasswordConfirm(null);
                 userDTO.setPasswordHash(null);
+                userDTO.setPasswordToken(null);
+                userDTO.setTokenExpiration(null);
             }
         }
     }
@@ -538,6 +562,83 @@ public class UserBO extends BaseBO<UserDTO> {
             }
         }
         return userDTO;
+    }
+
+    private void generateTokenEmail(UserDTO userDTO, PropertyBagDTO propertyBagDTO)
+            throws MtsException, ValidationException, NotFoundException, ConstraintViolationException, AuthenticationException, AuthorizationException {
+        final String METHODNAME = "generateTokenEmail ";
+        logger.info(METHODNAME, "called!");
+        logger.info(METHODNAME, "userDTO=", userDTO);
+
+        String passwordToken = userDTO.getPasswordToken();
+        String username = userDTO.getUsername();
+        String email = userDTO.getEmail();
+        String firstName = userDTO.getFirstName();
+        logger.info(METHODNAME, "passwordToken=", passwordToken);
+        logger.info(METHODNAME, "username=", username);
+        logger.info(METHODNAME, "email=", email);
+        logger.info(METHODNAME, "firstName=", firstName);
+
+        PasswordResetContext context = propertyBagDTO.get("context", PasswordResetContext.class);
+        logger.info(METHODNAME, "context=", context);
+        String htmlEmailBody;
+        String emailSubject;
+        if (null == context) {
+            throw new MtsException("context was unknown: " + context);
+        } else {
+            switch (context) {
+                case FORGOT:
+                    htmlEmailBody = propertyMGRLocal.get("FORGOT_PASSWORD_EMAIL", String.class);
+                    emailSubject = propertyMGRLocal.get("FORGOT_PASSWORD_EMAIL_SUBJECT", String.class);
+                    break;
+                case NEW_ACCOUNT:
+                    htmlEmailBody = propertyMGRLocal.get("NEW_ACCOUNT_EMAIL", String.class);
+                    emailSubject = propertyMGRLocal.get("NEW_ACCOUNT_EMAIL_SUBJECT", String.class);
+                    break;
+                default:
+                    throw new MtsException("context was unknown: " + context);
+            }
+        }
+
+        Integer linkExpiration = propertyMGRLocal.get("PASSWORD_LINK_EXPIRATION_HOURS", Integer.class);
+        String catLoginLink = EjbCoreConfiguration.getcatBsUri();
+        String catResetLink = EjbCoreConfiguration.getcatBsUri() + "/resetPassword.html?token=" + passwordToken;
+
+        logger.info(METHODNAME, "catLoginLink=", catLoginLink);
+        logger.info(METHODNAME, "catResetLink=", catResetLink);
+        logger.info(METHODNAME, "linkExpiration=", linkExpiration);
+        logger.info(METHODNAME, "emailSubject=", emailSubject);
+
+        htmlEmailBody = htmlEmailBody.replace("[PASSWORD_LINK_EXPIRATION_HOURS]", linkExpiration.toString());
+        htmlEmailBody = htmlEmailBody.replace("[EMAIL_CAT_BS_LOGIN_LINK]", catLoginLink);
+        htmlEmailBody = htmlEmailBody.replace("[EMAIL_CAT_BS_PASSWORD_RESET_LINK]", catResetLink);
+        htmlEmailBody = htmlEmailBody.replace("[USERNAME]", username);
+        htmlEmailBody = htmlEmailBody.replace("[FIRST_NAME]", firstName);
+
+        logger.info(METHODNAME, "emailBody=", htmlEmailBody);
+
+        String plainRegEx = "<div[^>]*>|</div[^>]*>|<br[^>]*>|<a[^\"]*\"|\".*>|mailto:";
+
+        String textEmailBody = htmlEmailBody.replaceAll(plainRegEx, "");
+
+        logger.info(METHODNAME, "textEmailBody=", textEmailBody);
+
+        smtpMGRLocal.sendHtmlMessage(null,
+                email,
+                emailSubject,
+                textEmailBody,
+                htmlEmailBody);
+    }
+
+    private void setPasswordToken(UserDTO userDTO) {
+        final String METHODNAME = "setPasswordToken ";
+        userDTO.setPasswordToken(StringUtils.getHashId(128));
+        Integer linkExpiration = propertyMGRLocal.get("PASSWORD_LINK_EXPIRATION_HOURS", Integer.class);
+        DateTime dateTime = new DateTime();
+        dateTime = dateTime.plusHours(linkExpiration);
+        userDTO.setTokenExpiration(dateTime.toDate());
+        logger.info(METHODNAME, "userDTO.getPasswordToken()=", userDTO.getPasswordToken());
+        logger.info(METHODNAME, "userDTO.getTokenExpiration()=", userDTO.getTokenExpiration());
     }
 
 }

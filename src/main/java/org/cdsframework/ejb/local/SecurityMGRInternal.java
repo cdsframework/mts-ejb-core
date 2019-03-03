@@ -7,22 +7,25 @@
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version. You should have received a copy of the GNU Lesser
- * General Public License along with this program. If not, see <http://www.gnu.org/licenses/> for more
- * details.
+ * General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/> for more details.
  *
- * The above-named contributors (HLN Consulting, LLC) are also licensed by the New York City
- * Department of Health and Mental Hygiene, Bureau of Immunization to have (without restriction,
- * limitation, and warranty) complete irrevocable access and rights to this project.
+ * The above-named contributors (HLN Consulting, LLC) are also licensed by the
+ * New York City Department of Health and Mental Hygiene, Bureau of Immunization
+ * to have (without restriction, limitation, and warranty) complete irrevocable
+ * access and rights to this project.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; THE
- * SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING,
- * BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR
- * ANY CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN CONNECTION WITH
- * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * For more information about this software, see https://www.hln.com/services/open-source/ or send
- * correspondence to ice@hln.com.
+ * For more information about this software, see
+ * https://www.hln.com/services/open-source/ or send correspondence to
+ * ice@hln.com.
  */
 package org.cdsframework.ejb.local;
 
@@ -96,7 +99,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
     private SessionBO sessionBO;
     @EJB
     private UserSecurityMGRLocal userSecurityMGRLocal;
-    
+
     private static final List<Class> defaultChildClassList = new ArrayList<Class>();
 
     /**
@@ -569,6 +572,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
      *
      * @param userDTO
      * @param password
+     * @param passwordToken
      * @return {@link org.cdsframework.dto.UserDTO [UserDTO]} class instance.
      * @throws NotFoundException if cachedUserDTO is not found.
      * @throws AuthenticationException if session is bad.
@@ -576,7 +580,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
      * @throws AuthorizationException
      */
     @Override
-    public boolean authenticate(UserDTO userDTO, String password)
+    public boolean authenticate(UserDTO userDTO, String password, String passwordToken)
             throws NotFoundException, AuthenticationException, MtsException, AuthorizationException {
         final String METHODNAME = "authenticate ";
         logger.logBegin(METHODNAME);
@@ -584,10 +588,10 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
         try {
             if (userDTO != null) {
                 // check if old password hash algo check works
-                if (userDTO.getPasswordHash() != null) {
+                if (!StringUtils.isEmpty(password) && userDTO.getPasswordHash() != null) {
                     result = userDTO.getPasswordHash().equals(StringUtils.getShaHashFromString(password));
                 } else {
-                    logger.error(METHODNAME, "userDTO.getPasswordHash() is null!");
+                    logger.error(METHODNAME, "userDTO.getPasswordHash() or password is null!");
                 }
                 if (result) {
                     // update the user to the new password algo
@@ -600,20 +604,37 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
                     }
                     logger.debug(METHODNAME, "Updated the password hash with the new algorithm for user: ", userDTO.getUsername());
                 } else {
-                    // check new password algo
-                    if (userDTO.getPasswordHash() != null) {
-                        try {
-                            result = PasswordHash.validatePassword(password, userDTO.getPasswordHash());
-                        } catch (Throwable t) {
-                            logger.warn(METHODNAME, t.getMessage());
-                            result = false;
+                    Date tokenExpiration = userDTO.getTokenExpiration();
+                    String storedPasswordToken = userDTO.getPasswordToken();
+                    if (!StringUtils.isEmpty(passwordToken) && !StringUtils.isEmpty(storedPasswordToken)) {
+                        if (tokenExpiration.before(new Date())) {
+                            logger.error("Password token is expired: ", userDTO.getTokenExpiration());
+                        } else {
+                            if (storedPasswordToken.equals(passwordToken)) {
+                                result = true;
+                            } else {
+                                logger.error("Password token did not match stored value: ", passwordToken);
+                            }
                         }
                     } else {
-                        logger.error(METHODNAME, "userDTO.getPasswordHash() is null!");
+                        // check new password algo
+                        if (!StringUtils.isEmpty(password) && userDTO.getPasswordHash() != null) {
+                            try {
+                                result = PasswordHash.validatePassword(password, userDTO.getPasswordHash());
+                            } catch (NoSuchAlgorithmException | InvalidKeySpecException t) {
+                                logger.warn(METHODNAME, t.getMessage());
+                                result = false;
+                            }
+                        } else {
+                            logger.error(METHODNAME, "userDTO.getPasswordHash() or password is null!");
+                        }
                     }
                 }
                 if (!result) {
-                    logger.debug("Bad authentication: db - ", userDTO.getPasswordHash(), " incoming - ", StringUtils.getShaHashFromString(password));
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Bad authentication: db - ", userDTO.getPasswordHash(), " incoming - ",
+                                !StringUtils.isEmpty(password) ? StringUtils.getShaHashFromString(password) : "password was empty!");
+                    }
                     userDTO.setFailedLoginAttempts(userDTO.getFailedLoginAttempts() + 1);
                     try {
                         logger.debug("Updating db for user_id: ", userDTO.getUserId(), " - ", userDTO.getDTOStates());
@@ -623,7 +644,13 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
                     }
                     logger.warn(userDTO.getUsername(), " failed to login.");
                 } else {
-                    userDTO.setFailedLoginAttempts(0);
+                    if (StringUtils.isEmpty(passwordToken)) {
+                        logger.info(METHODNAME, "resetting login related fields...");
+                        userDTO.setFailedLoginAttempts(0);
+                        userDTO.setSendInitialEmail(false);
+                        userDTO.setTokenExpiration(null);
+                        userDTO.setPasswordToken(null);
+                    }
                     try {
                         if (userDTO.isUpdated()) {
                             logger.debug("Updating db for user_id: ", userDTO.getUserId(), " - ", userDTO.getDTOStates());
@@ -636,11 +663,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
             } else {
                 throw new AuthenticationException(ExceptionReason.MISSING_ENTRY);
             }
-        } catch (ValidationException e) {
-            logger.error(e);
-        } catch (NoSuchAlgorithmException e) {
-            logger.error(e);
-        } catch (InvalidKeySpecException e) {
+        } catch (ValidationException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             logger.error(e);
         } finally {
             logger.logEnd(METHODNAME);
@@ -711,7 +734,7 @@ public class SecurityMGRInternal implements BaseSecurityMGR {
             logger.debug(METHODNAME, "About to call Security Map Implementations");
             Map<String, BaseSecurityInterface> securityImpl = userSecurityMGRLocal.getSecurityImpl();
             for (Map.Entry<String, BaseSecurityInterface> mapEntry : securityImpl.entrySet()) {
-                logger.info("Process post create session using class: " + mapEntry.getValue().getClass().getName() );
+                logger.info("Process post create session using class: " + mapEntry.getValue().getClass().getName());
                 mapEntry.getValue().postCreateSession(sessionDTO);
             }
 

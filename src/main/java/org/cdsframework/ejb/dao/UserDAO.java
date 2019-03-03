@@ -7,22 +7,25 @@
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU
  * Lesser General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version. You should have received a copy of the GNU Lesser
- * General Public License along with this program. If not, see <http://www.gnu.org/licenses/> for more
- * details.
+ * General Public License along with this program. If not, see
+ * <http://www.gnu.org/licenses/> for more details.
  *
- * The above-named contributors (HLN Consulting, LLC) are also licensed by the New York City
- * Department of Health and Mental Hygiene, Bureau of Immunization to have (without restriction,
- * limitation, and warranty) complete irrevocable access and rights to this project.
+ * The above-named contributors (HLN Consulting, LLC) are also licensed by the
+ * New York City Department of Health and Mental Hygiene, Bureau of Immunization
+ * to have (without restriction, limitation, and warranty) complete irrevocable
+ * access and rights to this project.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; THE
- * SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING,
- * BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR
- * ANY CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN CONNECTION WITH
- * THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDERS, IF ANY, OR DEVELOPERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES, OR OTHER LIABILITY OF ANY KIND, ARISING FROM, OUT OF, OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * For more information about this software, see https://www.hln.com/services/open-source/ or send
- * correspondence to ice@hln.com.
+ * For more information about this software, see
+ * https://www.hln.com/services/open-source/ or send correspondence to
+ * ice@hln.com.
  */
 package org.cdsframework.ejb.dao;
 
@@ -46,14 +49,20 @@ public class UserDAO extends BaseDAO<UserDTO> {
     @Override
     protected void initialize() throws MtsException {
 
-        setUpdateDML("UPDATE mt_user SET prefix = :prefix, last_name = :last_name, last_mod_datetime = :last_mod_datetime, middle_name = :middle_name, suffix = :suffix, failed_login_attempts = :failed_login_attempts, expiration_date = :expiration_date, change_password = :change_password, last_mod_id = :last_mod_id, app_proxy_user = :app_proxy_user, proxy_app_id = :proxy_app_id, user_id = :user_id, phone = :phone, disabled = :disabled, first_name = :first_name, email = :email, username = :username WHERE user_id = :user_id");
+        setUpdateDML("UPDATE mt_user SET prefix = :prefix, last_name = :last_name, last_mod_datetime = :last_mod_datetime, "
+                + "middle_name = :middle_name, suffix = :suffix, failed_login_attempts = :failed_login_attempts, "
+                + "expiration_date = :expiration_date, change_password = :change_password, last_mod_id = :last_mod_id, "
+                + "app_proxy_user = :app_proxy_user, proxy_app_id = :proxy_app_id, phone = :phone, disabled = :disabled, "
+                + "first_name = :first_name, email = :email, username = :username, password_token = :password_token, "
+                + "token_expiration = :token_expiration, send_initial_email = :send_initial_email WHERE user_id = :user_id");
 
         this.registerDML(UserDTO.UpdatePasswordHash.class, new QueryCallback(getDtoTableName()) {
             @Override
             public String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {
-                String sql = "update mt_user set change_password = 'N', password_hash = :password_hash, "
-                        + "last_mod_id = :last_mod_id, last_mod_datetime = :last_mod_datetime where user_id = :user_id";
-//                logger.warn(sql);
+                String sql = "update mt_user set change_password = 'N', password_hash = :password_hash, token_expiration = null, "
+                        + "send_initial_email = false, password_token = null, last_mod_id = :last_mod_id, last_mod_datetime = :last_mod_datetime "
+                        + "where user_id = :user_id";
+                logger.info("UserDTO.UpdatePasswordHash=" + sql);
                 return sql;
             }
         }, false);
@@ -65,9 +74,9 @@ public class UserDAO extends BaseDAO<UserDTO> {
                 String sql = "update mt_user set change_password = 'Y' where user_id = :user_id";
                 return sql;
             }
-            
+
         }, false);
-        
+
         this.registerDML(UserDTO.DtoByUsername.class, new QueryCallback(getDtoTableName()) {
             @Override
             public String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {
@@ -77,7 +86,6 @@ public class UserDAO extends BaseDAO<UserDTO> {
             }
         }, false);
 
-        
         this.registerDML(UserDTO.FailedLoginAttemptsByUserId.class, new QueryCallback(getDtoTableName()) {
             @Override
             public String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {
@@ -87,7 +95,6 @@ public class UserDAO extends BaseDAO<UserDTO> {
             }
         }, false);
 
-        
         this.registerDML(UserDTO.FindCatProxyUser.class, new QueryCallback(getDtoTableName()) {
             @Override
             public String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {
@@ -104,7 +111,6 @@ public class UserDAO extends BaseDAO<UserDTO> {
 
         }, false);
 
-        
         this.registerDML(UserDTO.ByUserId.class, new QueryCallback(getDtoTableName()) {
             @Override
             public String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {
@@ -121,8 +127,7 @@ public class UserDAO extends BaseDAO<UserDTO> {
                     if (queryClass == UserDTO.ByUserId.class) {
                         namedParameters.addValue("user_id", parameter.getUserDTO().getUserId());
                     }
-                }
-                else if (baseDTO instanceof UserDTO) {
+                } else if (baseDTO instanceof UserDTO) {
                     UserDTO parameter = (UserDTO) baseDTO;
                     if (queryClass == UserDTO.ByUserId.class) {
                         namedParameters.addValue("user_id", parameter.getUserId());
@@ -134,7 +139,6 @@ public class UserDAO extends BaseDAO<UserDTO> {
 
         }, false);
 
-        
         this.registerDML(ByGeneralProperties.class, new QueryCallback(getDtoTableName()) {
             @Override
             public String getQueryDML(BaseDTO baseDTO, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO) {

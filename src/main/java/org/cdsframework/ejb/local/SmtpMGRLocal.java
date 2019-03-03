@@ -369,13 +369,6 @@ public class SmtpMGRLocal {
 
             Multipart multipart = new MimeMultipart("alternative");
 
-            // the HTML message
-            if (htmlText != null) {
-                MimeBodyPart htmlMessage = new MimeBodyPart();
-                htmlMessage.setContent(htmlText, "text/html");
-                multipart.addBodyPart(htmlMessage);
-            }
-
             // the plain (non-HTML) alternate message
             if (plainText != null) {
                 MimeBodyPart plainTextBodyPart = new MimeBodyPart();
@@ -383,6 +376,13 @@ public class SmtpMGRLocal {
                 plainTextBodyPart.setHeader("Content-Type", plainTextBodyPart.getContentType());
                 plainTextBodyPart.setText(plainText);
                 multipart.addBodyPart(plainTextBodyPart);
+            }
+
+            // the HTML message
+            if (htmlText != null) {
+                MimeBodyPart htmlMessage = new MimeBodyPart();
+                htmlMessage.setContent(htmlText, "text/html");
+                multipart.addBodyPart(htmlMessage);
             }
 
             // now the attachments

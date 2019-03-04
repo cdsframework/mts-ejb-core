@@ -601,7 +601,7 @@ public class UserBO extends BaseBO<UserDTO> {
         }
 
         Integer linkExpiration = propertyMGRLocal.get("PASSWORD_LINK_EXPIRATION_HOURS", Integer.class);
-        String catLoginLink = EjbCoreConfiguration.getcatBsUri();
+        String catLoginLink = EjbCoreConfiguration.getcatBsUri() + "/login.html";
         String catResetLink = EjbCoreConfiguration.getcatBsUri() + "/resetPassword.html?token=" + passwordToken;
 
         logger.info(METHODNAME, "catLoginLink=", catLoginLink);

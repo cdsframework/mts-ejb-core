@@ -84,6 +84,66 @@
                 <env-entry-value>sysadmin-hln@hln.com</env-entry-value>
             </env-entry>
 
+            <!-- initial/forgot  password settings -->
+            <env-entry>
+                <env-entry-name>PASSWORD_LINK_EXPIRATION_HOURS</env-entry-name>
+                <env-entry-type>java.lang.Integer</env-entry-type>
+                <env-entry-value>48</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>NEW_ACCOUNT_EMAIL_SUBJECT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>New Account Info</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>FORGOT_PASSWORD_EMAIL_SUBJECT</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>Reset Password Info</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>NEW_ACCOUNT_EMAIL</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>&lt;div&gt;Hello,&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;Welcome to the CDS Administration Tool!&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;An administrator has created a new account for you. This account provides access to the &lt;a href=&quot;[EMAIL_CAT_BS_LOGIN_LINK]&quot;&gt;CAT interface&lt;/a&gt;.&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;To get started, click the password reset link below and log in with the provided username. You will be asked to create a new password upon first sign in.&lt;/div&gt;
+&lt;br /&gt;
+&lt;div style=&quot;font-weight: bold;&quot;&gt;Username:&lt;/div&gt;
+&lt;div&gt;[USERNAME]&lt;/div&gt;
+&lt;br /&gt;
+&lt;div style=&quot;font-weight: bold;&quot;&gt;Sign-in link:&lt;/div&gt;
+&lt;div&gt;&lt;a href=&quot;[EMAIL_CAT_BS_PASSWORD_RESET_LINK]&quot;&gt;password reset link&lt;/a&gt;&lt;/div&gt;
+&lt;br /&gt;
+&lt;div style=&quot;font-style: italic;&quot;&gt;Sign in link will automatically expire within [PASSWORD_LINK_EXPIRATION_HOURS] hours. If link expires, go to the Forget Password &lt;a href=&quot;[EMAIL_CAT_BS_LOGIN_LINK]&quot;&gt;link&lt;/a&gt; to obtain a new password.&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;Thanks&lt;/div&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;div style=&quot;font-style: italic;&quot;&gt;This is an automated email, do not reply to this message.&lt;/div&gt;</env-entry-value>
+            </env-entry>
+            <env-entry>
+                <env-entry-name>FORGOT_PASSWORD_EMAIL</env-entry-name>
+                <env-entry-type>java.lang.String</env-entry-type>
+                <env-entry-value>&lt;div&gt;Hi [FIRST_NAME],&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;We received a request to reset the password for your CAT account.&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;To reset your password, click the link below.&lt;/div&gt;
+&lt;div&gt;&lt;a href=&quot;[EMAIL_CAT_BS_PASSWORD_RESET_LINK]&quot;&gt;password reset link&lt;/a&gt;&lt;/div&gt;
+&lt;br /&gt;
+&lt;div style=&quot;font-style: italic;&quot;&gt;Reset link will automatically expire within [PASSWORD_LINK_EXPIRATION_HOURS] hours. If link expires, go to the Forget Password &lt;a href=&quot;[EMAIL_CAT_BS_LOGIN_LINK]&quot;&gt;link&lt;/a&gt; to obtain a new password.&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;If you do not want to change your password or did not request this, you may ignore this email.&lt;/div&gt;
+&lt;br /&gt;
+&lt;div&gt;Thanks&lt;/div&gt;
+&lt;br /&gt;
+&lt;br /&gt;
+&lt;div style=&quot;font-style: italic;&quot;&gt;This is an automated email, do not reply to this message.&lt;/div&gt;</env-entry-value>
+            </env-entry>
+
             <!-- file manager settings -->
             <env-entry>
                 <env-entry-name>FILE_DAY_OF_WEEK_INTERVAL</env-entry-name>

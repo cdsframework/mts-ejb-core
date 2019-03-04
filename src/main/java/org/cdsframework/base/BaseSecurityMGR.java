@@ -86,13 +86,14 @@ public interface BaseSecurityMGR {
      *
      * @param userDTO
      * @param password
+     * @param passwordToken
      * @return {@link org.cdsframework.dto.UserDTO [UserDTO]} class instance.
      * @throws NotFoundException if cachedUserDTO is not found.
      * @throws AuthenticationException if session is bad.
      * @throws MtsException
      * @throws AuthorizationException
      */
-    public abstract boolean authenticate(UserDTO userDTO, String password)
+    public abstract boolean authenticate(UserDTO userDTO, String password, String passwordToken)
             throws NotFoundException, AuthenticationException, MtsException, AuthorizationException;
 
     /**

@@ -56,6 +56,7 @@ import org.cdsframework.ejb.local.SecurityMGRLocal;
 import org.cdsframework.ejb.local.SecurityMGRInternal;
 import org.cdsframework.ejb.local.UserSecurityMGRLocal;
 import org.cdsframework.enumeration.LogLevel;
+import org.cdsframework.enumeration.PasswordResetContext;
 import org.cdsframework.enumeration.PermissionType;
 import org.cdsframework.exceptions.ConstraintViolationException;
 import org.cdsframework.exceptions.ValidationException;
@@ -133,7 +134,7 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
                 throw new AuthenticationException(ExceptionReason.CHANGE_PASSWORD);
             }
 
-            result = securityMGRInternal.authenticate(userDTO, password);
+            result = securityMGRInternal.authenticate(userDTO, password, null);
         } catch (NotFoundException nfe) {
             logger.error(username, " not found.");
             logger.debug(nfe);
@@ -257,22 +258,43 @@ public class SecurityMGR extends BaseMGR<SessionDTO> implements SecurityMGRRemot
 
     @Override
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public boolean changePassword(String userName, String currentPassword, String newPassword, String confirmPassword)
+    public boolean changePassword(String userName, String currentPassword, String passwordToken, String newPassword, String confirmPassword)
             throws AuthenticationException, AuthorizationException, ConstraintViolationException, ValidationException, NotFoundException, MtsException {
         final String METHODNAME = "changePassword ";
         UserDTO userDTO = new UserDTO();
         userDTO.setUsername(userName);
         userDTO = userBO.findByQueryMain(userDTO, UserDTO.DtoByUsername.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
 
-        logger.info(METHODNAME, userDTO.getUsername(), "user retrieval succeeded");
+        logger.info(METHODNAME, userDTO.getUsername(), " user retrieval succeeded");
 
         PropertyBagDTO propertyBagDTO = new PropertyBagDTO();
         propertyBagDTO.put("oldPassword", currentPassword);
+        propertyBagDTO.put("passwordToken", passwordToken);
         propertyBagDTO.put("newPassword", newPassword);
         propertyBagDTO.put("confirmPassword", confirmPassword);
 
         userBO.customSaveMain(userDTO, UserDTO.UpdatePasswordHash.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), propertyBagDTO);
         logger.info(METHODNAME, userDTO.getUsername(), " password change succeeded");
+        return true;
+    }
+
+    @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public boolean forgotPassword(String userName)
+            throws AuthenticationException, AuthorizationException, ConstraintViolationException, ValidationException, NotFoundException, MtsException {
+        final String METHODNAME = "forgotPassword ";
+        UserDTO userDTO = new UserDTO();
+        userDTO.setUsername(userName);
+        userDTO = userBO.findByQueryMain(userDTO, UserDTO.DtoByUsername.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), new PropertyBagDTO());
+
+        logger.info(METHODNAME, userDTO.getUsername(), " user retrieval succeeded");
+
+        PropertyBagDTO propertyBagDTO = new PropertyBagDTO();
+        
+        propertyBagDTO.put("context", PasswordResetContext.FORGOT);
+
+        userBO.customSaveMain(userDTO, UserDTO.UpdatePasswordToken.class, new ArrayList<>(), AuthenticationUtils.getInternalSessionDTO(), propertyBagDTO);
+        logger.info(METHODNAME, userDTO.getUsername(), " password token generation succeeded");
         return true;
     }
 }

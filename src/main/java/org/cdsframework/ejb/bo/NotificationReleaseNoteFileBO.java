@@ -29,9 +29,20 @@
  */
 package org.cdsframework.ejb.bo;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.ejb.Stateless;
 import org.cdsframework.base.BaseBO;
 import org.cdsframework.dto.NotificationReleaseNoteFileDTO;
+import org.cdsframework.dto.PropertyBagDTO;
+import org.cdsframework.dto.SessionDTO;
+import org.cdsframework.enumeration.Operation;
+import org.cdsframework.exceptions.AuthenticationException;
+import org.cdsframework.exceptions.AuthorizationException;
+import org.cdsframework.exceptions.ConstraintViolationException;
+import org.cdsframework.exceptions.MtsException;
+import org.cdsframework.exceptions.NotFoundException;
+import org.cdsframework.exceptions.ValidationException;
 
 /**
  *
@@ -39,4 +50,38 @@ import org.cdsframework.dto.NotificationReleaseNoteFileDTO;
  */
 @Stateless
 public class NotificationReleaseNoteFileBO extends BaseBO<NotificationReleaseNoteFileDTO> {
+
+    private final static long SIZE_LIMIIT = 2147483648L;
+    private final static List<String> MIME_TYPE_CONSTRAINT = new ArrayList<>();
+
+    static {
+        MIME_TYPE_CONSTRAINT.add("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        MIME_TYPE_CONSTRAINT.add("application/vnd.ms-excel");
+        MIME_TYPE_CONSTRAINT.add("application/pdf");
+        MIME_TYPE_CONSTRAINT.add("application/msword");
+        MIME_TYPE_CONSTRAINT.add("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        MIME_TYPE_CONSTRAINT.add("text/plain");
+    }
+
+    @Override
+    protected void validateAddOrUpdate(NotificationReleaseNoteFileDTO baseDTO, Operation operation, Class queryClass, List<Class> validationClasses, SessionDTO sessionDTO, PropertyBagDTO propertyBagDTO)
+            throws ValidationException, NotFoundException, ConstraintViolationException, MtsException, AuthenticationException, AuthorizationException {
+        final String METHODNAME = "validateAddOrUpdate ";
+        if (baseDTO != null) {
+            // size check
+
+            if (baseDTO.getSourceFile() != null) {
+                logger.info(METHODNAME, "baseDTO.getSourceFile().length=", baseDTO.getSourceFile().length);
+                if (baseDTO.getSourceFile().length > SIZE_LIMIIT) {
+                    throw new ValidationException("Release note reference file size exceeds limit.");
+                }
+            }
+            // mime type check
+            if (baseDTO.getMimeType() != null
+                    && !MIME_TYPE_CONSTRAINT.contains(baseDTO.getMimeType().toLowerCase())) {
+                throw new ValidationException("Unsupported release note reference file type.");
+            }
+        }
+    }
+
 }

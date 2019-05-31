@@ -61,6 +61,7 @@ public class NotificationReleaseNoteFileBO extends BaseBO<NotificationReleaseNot
         MIME_TYPE_CONSTRAINT.add("application/msword");
         MIME_TYPE_CONSTRAINT.add("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         MIME_TYPE_CONSTRAINT.add("text/plain");
+        MIME_TYPE_CONSTRAINT.add("text/csv");
     }
 
     @Override

@@ -345,7 +345,6 @@ public abstract class BasePlugin {
             String[] dbResources = DB_RESOURCES.split(",");
             logger.info(METHODNAME + "dbResources.length=" + dbResources.length);
             for (String dbResource : dbResources) {
-                boolean registerMissingMtsInt = false;
                 String[] resourceItems = dbResource.split("\\|");
                 if (resourceItems.length > 1) {
                     String resourceId = resourceItems[0].trim().toUpperCase();
@@ -353,12 +352,6 @@ public abstract class BasePlugin {
                     String jndiName = resourceItems[1].trim();
                     logger.info(METHODNAME + "jndiName: " + jndiName);
                     String connectedDatabaseInfo = dbMGRLocal.initializeDatabaseResource(resourceId, jndiName);
-                    if (connectedDatabaseInfo == null && Constants.MTS_INTERNAL_DB_RESOURCE_ID.equals(resourceId)) {
-                        logger.warn(METHODNAME, Constants.MTS_INTERNAL_DB_RESOURCE_ID,
-                                " resourceId doesn't have a database resource configured in the application server. Mapping it to ",
-                                Constants.MTS_EXTERNAL_DB_RESOURCE_ID);
-                        registerMissingMtsInt = true;
-                    }
                     logger.info(METHODNAME, "connectedDatabaseInfo: ", connectedDatabaseInfo);
                     if (connectedDatabaseInfo != null) {
                         String dbResourceFormat = String.format("%s|%s|%s", resourceId, jndiName, connectedDatabaseInfo);
@@ -366,12 +359,6 @@ public abstract class BasePlugin {
                             result += "," + dbResourceFormat;
                         } else {
                             result = dbResourceFormat;
-                        }
-                    } else if (registerMissingMtsInt) {
-                        if (result != null && result.contains(Constants.MTS_EXTERNAL_DB_RESOURCE_ID)) {
-                            result += "," + result.replaceAll(Constants.MTS_EXTERNAL_DB_RESOURCE_ID, Constants.MTS_INTERNAL_DB_RESOURCE_ID);
-                        } else {
-                            logger.error(METHODNAME, "unsuccessfully mapped ", Constants.MTS_INTERNAL_DB_RESOURCE_ID, " to ", Constants.MTS_EXTERNAL_DB_RESOURCE_ID);
                         }
                     } else {
                         logger.error(METHODNAME, "schema or database type not derrived - skipping db resource initialization: ", DB_RESOURCES);

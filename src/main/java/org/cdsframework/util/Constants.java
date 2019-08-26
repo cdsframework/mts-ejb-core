@@ -57,7 +57,6 @@ public class Constants {
     public static final Map<Integer, String> PLSQL_ERROR_CODES = new HashMap<Integer, String>();
     public static final List<Class> NATIVE_PROXY_USERS = new ArrayList<Class>();
     public static final String PERMISSION_CACHE_NAME = "securitySchemePermissionCache";
-    public static final String MTS_INTERNAL_DB_RESOURCE_ID = "MTSINT";
     public static final String MTS_EXTERNAL_DB_RESOURCE_ID = "MTS";
 
     public static String APP_SERVER = null;

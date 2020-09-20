@@ -34,7 +34,7 @@ ALTER TABLE notification ADD payload bytea;
 
 CREATE or REPLACE VIEW vw_notification_state AS
     SELECT ns.*,
-        n.notification_id, n.message_title, n.message_body, n.status, n.notification_type, n.notification_time, n.last_mod_datetime as update_time
+        n.notification_id, n.message_title, n.message_body, n.payload, n.status, n.notification_type, n.notification_time, n.last_mod_datetime as update_time
     FROM notification_state ns
         JOIN notification_recipient nr on ns.recipient_id = nr.recipient_id
         JOIN notification n ON nr.notification_id = n.notification_id

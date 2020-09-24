@@ -27,6 +27,7 @@
 
 -- // add vw_notification_state
 -- Migration SQL that makes the change goes here.
+DROP VIEW vw_notification_state;
 
 CREATE or REPLACE VIEW vw_notification_state AS
     SELECT ns.*,
@@ -38,6 +39,8 @@ CREATE or REPLACE VIEW vw_notification_state AS
 
 -- //@UNDO
 -- SQL to undo the change goes here.
+
+DROP VIEW vw_notification_state;
 
 CREATE or REPLACE VIEW vw_notification_state AS
     SELECT ns.*,
